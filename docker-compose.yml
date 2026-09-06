@@ -1,0 +1,41 @@
+services:
+  db:
+    image: mysql:8.0
+    container_name: target_db
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpass
+      MYSQL_DATABASE: target_web
+      MYSQL_USER: target_user
+      MYSQL_PASSWORD: target_pass
+    volumes:
+      - ./db/schema.sql:/docker-entrypoint-initdb.d/01_schema.sql:ro
+      - ./db/seed.sql:/docker-entrypoint-initdb.d/02_seed.sql:ro
+      - db_data:/var/lib/mysql
+    ports:
+      - "3306:3306"
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-prootpass"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  web:
+    build:
+      context: .
+      dockerfile: docker/php.Dockerfile
+    container_name: target_web
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      - "8090:80"
+    volumes:
+      - ./src:/var/www/html
+    environment:
+      DB_HOST: db
+      DB_NAME: target_web
+      DB_USER: target_user
+      DB_PASS: target_pass
+
+volumes:
+  db_data:

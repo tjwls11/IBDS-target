@@ -1,0 +1,19 @@
+# --- 프로젝트와 무관한 로컬 작업 디렉터리 (절대 커밋 금지) ---
+.inspection_tmp/
+_gift_analysis/
+
+# --- 에디터 / 도구 로컬 설정 ---
+.vscode/
+.idea/
+.claude/settings.local.json
+
+# --- OS ---
+Thumbs.db
+desktop.ini
+.DS_Store
+
+# --- 런타임 산출물 ---
+*.log
+db_data/
+scan_results/
+*.zap
