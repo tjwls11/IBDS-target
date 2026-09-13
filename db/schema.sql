@@ -31,3 +31,10 @@ CREATE TABLE comments (
   CONSTRAINT fk_comments_post FOREIGN KEY (post_id) REFERENCES posts(id),
   CONSTRAINT fk_comments_user FOREIGN KEY (user_id) REFERENCES users(id)
 );
+
+-- 최근 검색어 저장 (search.php): 응답엔 입력을 raw로 에코하지만 저장은 escape -> 에코백 reflected_only 검증용
+CREATE TABLE search_keywords (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  content TEXT NOT NULL,
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
