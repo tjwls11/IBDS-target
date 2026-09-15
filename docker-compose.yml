@@ -2,6 +2,9 @@ services:
   db:
     image: mysql:8.0
     container_name: target_db
+    # 10초 넘는 SELECT는 서버가 자동으로 중단(폭주 sleep() 주입 쿼리가 쌓여 커넥션 고갈되는 것 방지).
+    # SQLi 취약점 자체는 그대로 — 주입은 되되 쿼리가 무한정 서버를 물지 못하게만 상한을 건다.
+    command: --max-execution-time=10000
     environment:
       MYSQL_ROOT_PASSWORD: rootpass
       MYSQL_DATABASE: target_web
