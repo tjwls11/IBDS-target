@@ -69,4 +69,12 @@ while ($krow = mysqli_fetch_assoc($kw)):
 <?php endwhile; ?>
 </div>
 
+<h3 class="page-title" style="margin-top:32px;">DOM 미리보기</h3>
+<p class="helper-text">URL의 해시(#) 뒤에 입력한 내용을 미리 보여줍니다.</p>
+<div id="dom-preview" class="card"></div>
+<script>
+const fragment = decodeURIComponent(window.location.hash.slice(1));
+document.getElementById('dom-preview').innerHTML = fragment;
+</script>
+
 <?php require __DIR__ . '/includes/footer.php'; ?>

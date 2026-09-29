@@ -91,20 +91,25 @@ src/                   호스트에 바인드 마운트 → /var/www/html
 
 | #   | 유형               | 진입점                              | 출력 지점                                                        | 비고                                  |
 | --- | ------------------ | ----------------------------------- | ---------------------------------------------------------------- | ------------------------------------- |
-| X1  | Reflected          | `/search.php?q=`                    | `search.php:18` (속성값 `value="..."`), `search.php:23` (텍스트) | 한 파라미터 → 두 컨텍스트             |
-| X2  | Stored             | `/mypage.php` POST `bio`            | `profile.php:34`                                                 | **파일·요청 경계를 넘음** (아래 참고) |
-| X3  | Stored             | `/board/write.php` POST `title`     | `view.php:31` (속성값), `view.php:39` (텍스트)                   |                                       |
-| X4  | Stored             | `/board/write.php` POST `content`   | `view.php:39`(제목 아래 `nl2br`)                                 |                                       |
-| X5  | Stored (필터 우회) | `/board/comment.php` POST `content` | `view.php:56`                                                    | `comment.php:18` 블랙리스트           |
+| X1  | Reflected          | `/search.php?q=`                    | `search.php:29` (속성값 `value="..."`), `search.php:34` (텍스트) | 한 파라미터 → 두 컨텍스트             |
+| X2  | Reflected          | `/search.php` POST `keyword`        | `search.php:57`                                                  | 현재 응답만 raw 출력, DB 저장값은 escape |
+| X3  | Stored             | `/mypage.php` POST `bio`            | `profile.php:34`                                                 | **파일·요청 경계를 넘음** (아래 참고) |
+| X4  | Stored             | `/board/write.php` POST `title`     | `view.php:31` (속성값), `view.php:39` (텍스트)                   |                                       |
+| X5  | Stored             | `/board/write.php` POST `content`   | `view.php:40` (제목 아래 `nl2br`)                                |                                       |
+| X6  | Stored (필터 우회) | `/board/comment.php` POST `content` | `view.php:56`                                                    | `comment.php:18` 블랙리스트           |
+| X7  | DOM-based          | `/search.php#...` (`location.hash`) | `search.php:77` (`innerHTML`)                                    | 서버 요청 없이 브라우저에서 source→sink |
 
-- **X2 가 매퍼 평가의 핵심 케이스**입니다. 입력은 `mypage.php`(POST, prepared statement로 **안전하게** 저장)
+- **X3 가 매퍼 평가의 핵심 케이스**입니다. 입력은 `mypage.php`(POST, prepared statement로 **안전하게** 저장)
   → DB `users.bio` → 출력은 **다른 파일·다른 요청**인 `profile.php:34` 에서 이스케이프 없이.
   단일 파일 안에서 source→sink 를 찾는 분석기는 이 흐름을 잡지 못합니다.
   재현: `hyunwoo_seo` 로 로그인 → `/mypage.php` 자기소개에 `<img src=x onerror=alert(1)>` 저장
   → 로그아웃 후 `/profile.php?user=hyunwoo_seo` 접속.
-- **X5** 는 `comment.php:18` 의 `preg_replace('/<script[^>]*>.*?<\/script>/is', ...)` 로
+- **X6** 는 `comment.php:18` 의 `preg_replace('/<script[^>]*>.*?<\/script>/is', ...)` 로
   `<script>` 태그만 제거합니다. `<img src=x onerror=alert(1)>` 나 `<svg onload=...>` 는 통과합니다.
   "필터가 있으니 안전"으로 처리하는 분석기의 오판을 유도하는 케이스입니다.
+- **X7** 은 URL fragment를 서버에 전송하지 않고 브라우저에서만 처리합니다.
+  `location.hash`가 source, `innerHTML`이 sink인 전형적인 DOM 기반 XSS입니다.
+  재현: `/search.php#%3Cimg%20src=x%20onerror=alert(1)%3E`
 
 ### 3.3 정보 노출 / 접근제어
 
@@ -142,6 +147,6 @@ src/                   호스트에 바인드 마운트 → /var/www/html
 | 분류                 | 개수                                      |
 | -------------------- | ----------------------------------------- |
 | SQL Injection 지점   | 8개 엔드포인트 / 13개 파라미터 / 9개 싱크 |
-| XSS                  | Reflected 1, Stored 4                     |
+| XSS                  | Reflected 2, Stored 4, DOM-based 1        |
 | 정보 노출            | 3                                         |
 | 안전(FP 판정용) 파일 | 4 + 부분 3                                |
